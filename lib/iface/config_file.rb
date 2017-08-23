@@ -4,10 +4,6 @@ require 'iface/ip_helpers'
 require 'iface/value_set'
 
 module Iface
-  # Represents a set of ConfigFiles for network interface configuration
-  class Config
-  end
-
   # Base class for a network interface config file
   class ConfigFile
     def self.create(filename, io)
