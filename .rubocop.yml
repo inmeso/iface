@@ -1,0 +1,9 @@
+AllCops:
+  TargetRubyVersion: 2.4.1
+
+Metrics/BlockLength:
+  Exclude:
+  - 'spec/**/*'
+
+Metrics/LineLength:
+  Enabled: false
