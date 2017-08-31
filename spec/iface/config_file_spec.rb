@@ -56,6 +56,7 @@ RSpec.describe Iface::ConfigFile do
       __EOF__
     ]
   end
+
   describe '::parse_filename' do
     context 'simple interface file name' do
       it 'returns the device name' do

@@ -1,7 +1,13 @@
 # frozen_string_literal: true
 
-require 'iface/ip_helpers'
-require 'iface/value_set'
+require_relative 'ip_helpers'
+require_relative 'value_set'
+
+class String
+  def decamelize
+    gsub(/[A-Z]/) {|m| $` == '' ? m.downcase : "_#{m.downcase}"}
+  end
+end
 
 module Iface
   # Base class for a network interface config file
@@ -17,7 +23,7 @@ module Iface
         end
       end
 
-      raise ArgumentError, 'Input not recognized'
+      raise ArgumentError, "Input not recognized from file #{fname}: #{[device, range_num, clone_num, vars].inspect}"
     end
 
     def self.parse_filename(filename)
@@ -30,6 +36,14 @@ module Iface
 
     def self.recognize?(_device, _range_num, _clone_num, _vars)
       false
+    end
+
+    def self.file_type_name
+      if self.name =~ /File\Z/
+        self.name.split('::').last[0..-5].decamelize.to_sym
+      else
+        nil
+      end
     end
 
     def initialize(filename, device, _range_num, _clone_num, _vars)
@@ -138,9 +152,16 @@ module Iface
     end
   end
 
+  class LoopbackFile < ConfigFile
+    def self.recognize?(device, _range_num, _clone_num, _vars)
+      device == 'lo'
+    end
+  end
+
   FILE_TYPES = [
     PrimaryFile,
     CloneFile,
-    RangeFile
+    RangeFile,
+    LoopbackFile
   ].freeze
 end

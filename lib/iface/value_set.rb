@@ -8,8 +8,8 @@ module Iface
       attr_reader :name, :value
 
       def initialize(line)
-        match = line.sub(/#.*$/, '').strip.match(/(^[A-Z0-9_]+)="?(.*?)"?$/)
-        raise ArgumentError, 'Pattern NAME=value expected' unless match
+        match = line.match(/(^[A-Z0-9_]+)="?(.*?)"?$/)
+        raise ArgumentError, "Expected pattern NAME=value; got #{line.inspect}" unless match
         @name = match[1]
         @value = match[2]&.sub(/^"/, '')&.sub(/"$/, '')
       end
@@ -20,9 +20,12 @@ module Iface
     end
 
     def initialize(io)
-      @vars = io.inject({}) do |memo, line|
-        pair = Pair.new(line)
-        memo.merge(pair.name => pair)
+      @vars = {}
+      io.each_line do |line|
+        edited_line = line.sub(/#.*$/, '').strip
+        next if edited_line.empty?
+        pair = Pair.new(edited_line)
+        @vars[pair.name] = pair
       end
     end
 
