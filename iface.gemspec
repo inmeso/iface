@@ -2,8 +2,8 @@
 
 Gem::Specification.new do |s|
   s.name = 'iface'
-  s.version = '0.1.0'
-  s.date = '2017-09-02'
+  s.version = '0.1.1'
+  s.date = '2017-09-19'
   s.summary = 'Configures network interfaces on Red Hat systems'
   s.authors = ['Jim Cain']
   s.email = 'camelotjim@jcain.net'
