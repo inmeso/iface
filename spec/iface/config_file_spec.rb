@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe Iface::ConfigFile do
-  let(:bootproto) { 'none' }
   let(:ipaddr) { '173.208.232.2' }
   let(:ipaddr_middle) { '173.208.232.12' }
   let(:ipaddr_end) { '173.208.232.30' }
@@ -14,7 +13,7 @@ RSpec.describe Iface::ConfigFile do
       'ifcfg-eth0',
       StringIO.new(<<~__EOF__)
         DEVICE=eth0
-        BOOTPROTO=#{bootproto}
+        BOOTPROTO=none
         HWADDR=00:30:48:d7:04:48
         NM_CONTROLLED=yes
         ONBOOT=yes
@@ -90,8 +89,6 @@ RSpec.describe Iface::ConfigFile do
     end
 
     context 'static' do
-      let(:bootproto) { 'none' }
-
       context '#ip_address' do
         it 'returns the IP address' do
           expect(config_file.ip_address).to eq ipaddr
@@ -120,7 +117,17 @@ RSpec.describe Iface::ConfigFile do
     end
 
     context 'dhcp' do
-      let(:bootproto) { 'dhcp' }
+      let(:primary_file) do
+        [
+          'ifcfg-eth0',
+          StringIO.new(<<~__EOF__)
+            DEVICE=eth0
+            BOOTPROTO=dhcp
+            ONBOOT=yes
+            TYPE=Ethernet
+          __EOF__
+        ]
+      end
 
       context '#ip_address' do
         it 'returns nil' do
