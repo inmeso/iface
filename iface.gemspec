@@ -15,6 +15,6 @@ Gem::Specification.new do |s|
     lib/iface/ip_helpers.rb
     lib/iface/value_set.rb
   ]
-  s.homepage = 'http://rubygems.org/gems/hola'
+  s.homepage = 'http://rubygems.org/gems/iface'
   s.license = 'BSD-3-Clause'
 end
