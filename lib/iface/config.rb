@@ -36,8 +36,10 @@ module Iface
     #
     # There should be 0 or 1 of these; else it's an error.
     def primary
-      result = @files[:primary].find_all do |file|
-        if file.ip_address.nil?
+      result = @files[:primary].select do |file|
+        if !file.static?
+          true
+        elsif file.ip_address.nil?
           false
         else
           ipaddr = IPAddr.new(file.ip_address)

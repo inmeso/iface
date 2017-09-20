@@ -66,19 +66,39 @@ RSpec.describe Iface::Config do
   end
 
   describe '#primary' do
-    context 'when primary IP is not reserved' do
-      let(:ipaddr) { '173.208.232.2' }
+    context 'static' do
+      context 'when primary IP is not reserved' do
+        let(:ipaddr) { '173.208.232.2' }
 
-      it 'returns the PrimaryFile' do
-        expect(config.primary).to be_a Iface::PrimaryFile
+        it 'returns the PrimaryFile' do
+          expect(config.primary).to be_a Iface::PrimaryFile
+        end
+      end
+
+      context 'when primary IP is reserved' do
+        let(:ipaddr) { '192.168.100.50' }
+
+        it 'returns nil' do
+          expect(config.primary).to be_nil
+        end
       end
     end
 
-    context 'when primary IP is reserved' do
-      let(:ipaddr) { '192.168.100.50' }
+    context 'dhcp' do
+      let(:primary_file) do
+        [
+          'ifcfg-eth0',
+          StringIO.new(<<~__EOF__)
+            DEVICE=eth0
+            BOOTPROTO=dhcp
+            ONBOOT=yes
+            TYPE=Ethernet
+          __EOF__
+        ]
+      end
 
-      it 'returns nil' do
-        expect(config.primary).to be_nil
+      it 'returns the PrimaryFile' do
+        expect(config.primary).to be_a Iface::PrimaryFile
       end
     end
   end
