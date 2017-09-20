@@ -18,20 +18,33 @@ module Iface
 
     def initialize
       @files = {}
+      @devices = {}
     end
 
+    # Adds the given `filename` and `io` and returns self
     def add(filename, io)
       file = ConfigFile.create(filename, io)
+
+      # add to files by type
       file_type = file.class.file_type_name
       if @files.key?(file_type)
         @files[file_type] << file
       else
         @files[file_type] = [file]
       end
+
+      # add PrimaryFile to devices by device name
+      @devices[file.device] = file if file.is_a?(PrimaryFile)
+
       self
     end
 
-    # Returns the PrimaryFile
+    # Returns the `PrimaryFile` for `device`
+    def [](device)
+      @devices[device]
+    end
+
+    # Returns the `PrimaryFile` for the primary interface
     #
     # There should be 0 or 1 of these; else it's an error.
     def primary

@@ -65,6 +65,21 @@ RSpec.describe Iface::Config do
     end
   end
 
+  describe '#[]' do
+    context 'device is not defined' do
+      it 'returns nil' do
+        expect(config['eth999']).to be_nil
+      end
+    end
+
+    context 'primary for device is defined' do
+      it 'returns the PrimaryFile for the device' do
+        eth0 = config['eth0']
+        expect(eth0).to be_a Iface::PrimaryFile
+      end
+    end
+  end
+
   describe '#primary' do
     context 'static' do
       context 'when primary IP is not reserved' do
