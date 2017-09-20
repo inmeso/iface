@@ -2,7 +2,7 @@
 
 # Adds IP-related methods to all Integers
 class Integer
-  Mask32_ = 0xffffffffffffffff
+  Mask32_ = 0xffffffffffffffff # rubocop:disable Style/ConstantName
 
   def to_ip(ipver = 4)
     to_ipaddr(ipver).to_s

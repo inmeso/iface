@@ -12,8 +12,8 @@ RSpec.describe Iface::ValueSet::Pair do
     context 'good syntax' do
       it 'parses the text correctly' do
         [
-          %w(FOO=bar FOO bar),
-          %w(FOO="baz" FOO baz),
+          %w[FOO=bar FOO bar],
+          %w[FOO="baz" FOO baz],
           ['FOO= baz', 'FOO', ' baz']
         ].each do |text, name, value|
           pair1 = described_class.new(text)
@@ -27,8 +27,8 @@ RSpec.describe Iface::ValueSet::Pair do
   describe '#to_s' do
     it 'returns NAME=value' do
       [
-        ['FOO=bar', 'FOO="bar"'],
-        ['FOO="baz"', 'FOO="baz"'],
+        %w[FOO=bar FOO="bar"],
+        %w[FOO="baz" FOO="baz"],
         ['FOO= baz', 'FOO=" baz"']
       ].each do |text, result|
         expect(described_class.new(text).to_s).to eq result
@@ -82,7 +82,7 @@ RSpec.describe Iface::ValueSet do
 
   describe '#to_s' do
     it 'returns a deserialized list of NAME=value pairs' do
-      expect(value_set.to_s).to eq %{FOO="bar"\nBAR="baz"\nPHRED="smerd"}
+      expect(value_set.to_s).to eq %(FOO="bar"\nBAR="baz"\nPHRED="smerd")
     end
   end
 end

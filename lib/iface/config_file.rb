@@ -3,14 +3,19 @@
 require_relative 'ip_helpers'
 require_relative 'value_set'
 
+# Monkey-patches `String` to add helper methods
 class String
   def decamelize
-    gsub(/[A-Z]/) {|m| $` == '' ? m.downcase : "_#{m.downcase}"}
+    gsub(/[A-Z]/) { |m| $` == '' ? m.downcase : "_#{m.downcase}" }
   end
 end
 
 module Iface
   # Base class for a network interface config file
+  #
+  # When reading from an existing file, use `.create`. When creating a config
+  # programatically for writing to a file, instantiate one of the subclasses
+  # (e.g. `PrimaryFile.new`).
   class ConfigFile
     def self.create(filename, io)
       fname = File.split(filename).last
@@ -28,10 +33,9 @@ module Iface
 
     def self.parse_filename(filename)
       match = filename.match(/\Aifcfg-(\w+)((-range(\d+))|(:(\d+)))?\Z/)
-      if match
-        device, _skip0, _skip1, range_num, _skip2, clone_num = match.captures
-        [device, range_num&.to_i, clone_num&.to_i]
-      end
+      return unless match
+      device, _skip0, _skip1, range_num, _skip2, clone_num = match.captures
+      [device, range_num&.to_i, clone_num&.to_i]
     end
 
     def self.recognize?(_device, _range_num, _clone_num, _vars)
@@ -72,11 +76,10 @@ module Iface
 
     def initialize(filename, device, range_num, clone_num, vars)
       super
-      if (vars['bootproto'] == 'static') || (vars['bootproto'] == 'none') # RHEL6 uses "none"
-        @ip_address = vars['ipaddr']
-        @ipv6_address = vars['ipv6addr']
-        @ipv6_secondaries = vars['ipv6addr_secondaries']&.split(/\s+/)
-      end
+      return unless %w[static none].include?(vars['bootproto']) # RHEL6 uses "none"
+      @ip_address = vars['ipaddr']
+      @ipv6_address = vars['ipv6addr']
+      @ipv6_secondaries = vars['ipv6addr_secondaries']&.split(/\s+/)
     end
 
     def static?

@@ -7,3 +7,6 @@ Metrics/BlockLength:
 
 Metrics/LineLength:
   Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false

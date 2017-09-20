@@ -3,6 +3,7 @@
 require 'ipaddr'
 
 module Iface
+  # Represents an IP address including subnet mask
   class IpAddress
     def initialize(*args)
       @ipaddr = IPAddr.new(*args)

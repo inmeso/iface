@@ -6,12 +6,11 @@ require 'ipaddr'
 module Iface
   # Represents a set of ConfigFiles for network interface configuration
   class Config
-    Reserved_IP_Ranges = %w{10.0.0.0/8 192.168.0.0/16}.collect { |i| IPAddr.new(i) }
+    Reserved_IP_Ranges = %w[10.0.0.0/8 192.168.0.0/16].collect { |i| IPAddr.new(i) }
 
     def self.discover(pattern)
       new.tap do |config|
         Dir.glob(pattern) do |fullname|
-          puts fullname
           File.open(fullname) { |io| config.add(fullname, io) }
         end
       end
@@ -43,17 +42,17 @@ module Iface
           false
         else
           ipaddr = IPAddr.new(file.ip_address)
-          !Reserved_IP_Ranges.any? { |range| range.include?(ipaddr) }
+          Reserved_IP_Ranges.none? { |range| range.include?(ipaddr) }
         end
       end
 
       case result.size
-        when 0
-          nil
-        when 1
-          result.first
-        else
-          raise RuntimeError, "Expected 0 or 1 primary files; found #{result.size}"
+      when 0
+        nil
+      when 1
+        result.first
+      else
+        raise "Expected 0 or 1 primary files; found #{result.size}"
       end
     end
   end
