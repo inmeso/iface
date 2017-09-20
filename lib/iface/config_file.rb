@@ -17,6 +17,8 @@ module Iface
   # programatically for writing to a file, instantiate one of the subclasses
   # (e.g. `PrimaryFile.new`).
   class ConfigFile
+    attr_reader :filename, :device, :vars
+
     def self.create(filename, io)
       fname = File.split(filename).last
       device, range_num, clone_num = parse_filename(fname)
@@ -43,16 +45,13 @@ module Iface
     end
 
     def self.file_type_name
-      if self.name =~ /File\Z/
-        self.name.split('::').last[0..-5].decamelize.to_sym
-      else
-        nil
-      end
+      name.split('::').last[0..-5].decamelize.to_sym if name.match?(/File\Z/)
     end
 
-    def initialize(filename, device, _range_num, _clone_num, _vars)
+    def initialize(filename, device, _range_num, _clone_num, vars)
       @filename = filename
       @device = device
+      @vars = vars
     end
 
     def static?
@@ -155,9 +154,23 @@ module Iface
     end
   end
 
+  # Represents a loopback file (device "lo")
   class LoopbackFile < ConfigFile
     def self.recognize?(device, _range_num, _clone_num, _vars)
       device == 'lo'
+    end
+
+    def initialize(filename, device, range_num, _clone_num, vars)
+      super
+      @ip_address = vars['ipaddr']
+    end
+
+    def static?
+      true
+    end
+
+    def include?(ip)
+      @ip_address == ip
     end
   end
 
