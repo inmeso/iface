@@ -5,8 +5,8 @@ require 'rubygems/package_task'
 
 spec = Gem::Specification.new do |s|
   s.name = 'iface'
-  s.version = '0.1.3'
-  s.date = '2017-09-20'
+  s.version = '0.1.4'
+  s.date = '2017-09-28'
   s.summary = 'Configures network interfaces on Red Hat systems'
   s.authors = ['Jim Cain']
   s.email = 'camelotjim@jcain.net'
