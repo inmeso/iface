@@ -5,7 +5,7 @@ require 'rubygems/package_task'
 
 spec = Gem::Specification.new do |s|
   s.name = 'iface'
-  s.version = '0.1.4'
+  s.version = '0.1.5'
   s.date = '2017-09-28'
   s.summary = 'Configures network interfaces on Red Hat systems'
   s.authors = ['Jim Cain']
@@ -17,6 +17,7 @@ spec = Gem::Specification.new do |s|
     lib/iface/ip_address.rb
     lib/iface/ip_helpers.rb
     lib/iface/value_set.rb
+    lib/iface/value_set/pair.rb
   ]
   s.homepage = 'http://rubygems.org/gems/iface'
   s.license = 'BSD-3-Clause'
