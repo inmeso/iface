@@ -22,11 +22,10 @@ module Iface
     def self.create(filename, io)
       fname = File.split(filename).last
       device, range_num, clone_num = parse_filename(fname)
-      vars = ValueSet.new(io)
 
       FILE_TYPES.each do |klass|
-        if klass.recognize?(device, range_num, clone_num, vars)
-          return klass.new(filename, device, range_num, clone_num, vars)
+        if klass.recognize?(device, range_num, clone_num)
+          return klass.new(filename, device, range_num, clone_num, io)
         end
       end
 
@@ -40,7 +39,7 @@ module Iface
       [device, range_num&.to_i, clone_num&.to_i]
     end
 
-    def self.recognize?(_device, _range_num, _clone_num, _vars)
+    def self.recognize?(_device, _range_num, _clone_num)
       false
     end
 
@@ -48,10 +47,10 @@ module Iface
       name.split('::').last[0..-5].decamelize.to_sym if name.match?(/File\Z/)
     end
 
-    def initialize(filename, device, _range_num, _clone_num, vars)
+    def initialize(filename, device, _range_num, _clone_num, io)
       @filename = filename
       @device = device
-      @vars = vars
+      @vars = value_set_class.new(io)
     end
 
     def static?
@@ -61,32 +60,80 @@ module Iface
     def include?(_ip)
       raise NotImplementedError
     end
+
+    def value_set_class
+      ValueSet
+    end
+
+    def to_s
+      @vars.to_s
+    end
   end
 
   # Represents a primary config file (not loopback, range or clone file)
   #
   # These are files named like "ifcfg-eth0".
   class PrimaryFile < ConfigFile
-    attr_reader :ip_address, :ipv6_address, :ipv6_secondaries
-
-    def self.recognize?(device, range_num, clone_num, _vars)
+    def self.recognize?(device, range_num, clone_num)
       device != 'lo' && range_num.nil? && clone_num.nil?
     end
 
-    def initialize(filename, device, range_num, clone_num, vars)
-      super
-      return unless %w[static none].include?(vars['bootproto']) # RHEL6 uses "none"
-      @ip_address = vars['ipaddr']
-      @ipv6_address = vars['ipv6addr']
-      @ipv6_secondaries = vars['ipv6addr_secondaries']&.split(/\s+/)
+    def ip_address
+      @vars['ipaddr']
+    end
+
+    def ip_address=(new_ip)
+      @vars['ipaddr'] = new_ip
+      make_static
+      disable_nm
+    end
+
+    def ipv6_address
+      @vars['ipv6addr']
+    end
+
+    def ipv6_address=(new_ip)
+      @vars['ipv6addr'] = new_ip
+      make_static
+      disable_nm
+    end
+
+    def ipv6_secondaries
+      @vars['ipv6addr_secondaries']&.split(/\s+/)
+    end
+
+    def ipv6_secondaries=(new_ips)
+      @vars['ipv6addr_secondaries'] = new_ips
+      make_static
+      disable_nm
+    end
+
+    def value_set_class
+      PrimaryInterface
+    end
+
+    def make_static
+      @vars.make_static unless static?
+    end
+
+    def disable_nm
+      @vars.disable_nm
+    end
+
+    def nm_controlled?
+      @vars['nm_controlled'] == 'yes'
+    end
+
+    def use_ipv6
+      @vars.use_ipv6
     end
 
     def static?
-      !@ip_address.nil?
+      @vars['bootproto'] == 'none'
     end
 
     def include?(ip)
-      @ip_address == ip
+      ip_address == ip
     end
   end
 
@@ -96,11 +143,11 @@ module Iface
   class CloneFile < ConfigFile
     attr_reader :ip_address, :clone_num
 
-    def self.recognize?(_device, _range_num, clone_num, _vars)
+    def self.recognize?(_device, _range_num, clone_num)
       !clone_num.nil?
     end
 
-    def initialize(filename, device, _range_num, clone_num, vars)
+    def initialize(filename, device, _range_num, clone_num, io)
       super
       @ip_address = vars['ipaddr']
       @clone_num = clone_num
@@ -121,11 +168,11 @@ module Iface
   class RangeFile < ConfigFile
     attr_reader :start_clone_num
 
-    def self.recognize?(_device, range_num, _clone_num, _vars)
+    def self.recognize?(_device, range_num, _clone_num)
       !range_num.nil?
     end
 
-    def initialize(filename, device, range_num, clone_num, vars)
+    def initialize(filename, device, range_num, clone_num, io)
       super
       @start_ip_num = string_to_ip_num(vars['ipaddr_start'])
       @end_ip_num = string_to_ip_num(vars['ipaddr_end'])
@@ -156,11 +203,11 @@ module Iface
 
   # Represents a loopback file (device "lo")
   class LoopbackFile < ConfigFile
-    def self.recognize?(device, _range_num, _clone_num, _vars)
+    def self.recognize?(device, _range_num, _clone_num)
       device == 'lo'
     end
 
-    def initialize(filename, device, range_num, _clone_num, vars)
+    def initialize(filename, device, range_num, _clone_num, io)
       super
       @ip_address = vars['ipaddr']
     end
