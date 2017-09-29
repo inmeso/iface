@@ -44,7 +44,7 @@ module Iface
     end
 
     def self.file_type_name
-      name.split('::').last[0..-5].decamelize.to_sym if name.match?(/File\Z/)
+      name.split('::').last[0..-5].decamelize.to_sym if name.match(/File\Z/)
     end
 
     def initialize(filename, device, _range_num, _clone_num, io)
