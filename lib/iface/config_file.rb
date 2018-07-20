@@ -21,33 +21,33 @@ module Iface
 
     def self.create(filename, io)
       fname = File.split(filename).last
-      device, range_num, clone_num = parse_filename(fname)
+      device, vlan_id, range_num, clone_num = parse_filename(fname)
 
       FILE_TYPES.each do |klass|
-        if klass.recognize?(device, range_num, clone_num)
-          return klass.new(filename, device, range_num, clone_num, io)
+        if klass.recognize?(device, vlan_id, range_num, clone_num)
+          return klass.new(filename, device, vlan_id, range_num, clone_num, io)
         end
       end
 
-      raise ArgumentError, "Input not recognized from file #{fname}: #{[device, range_num, clone_num, vars].inspect}"
+      raise ArgumentError, "Input not recognized from file #{fname}: #{[device, vlan_id, range_num, clone_num, vars].inspect}"
     end
 
     def self.parse_filename(filename)
-      match = filename.match(/\Aifcfg-(\w+)((-range(\d+))|(:(\d+)))?\Z/)
+      match = filename.match(/\Aifcfg-(\w+)((\.(\d+))|(-range(\d+))|(:(\d+)))?\Z/)
       return unless match
-      device, _skip0, _skip1, range_num, _skip2, clone_num = match.captures
-      [device, range_num&.to_i, clone_num&.to_i]
+      device, _skip0, _skip1, vlan_id, _skip2, range_num, _skip3, clone_num = match.captures
+      [device, vlan_id&.to_i, range_num&.to_i, clone_num&.to_i]
     end
 
-    def self.recognize?(_device, _range_num, _clone_num)
+    def self.recognize?(_device, _vlan_id, _range_num, _clone_num)
       false
     end
 
     def self.file_type_name
-      name.split('::').last[0..-5].decamelize.to_sym if name.match(/File\Z/)
+      name.split('::').last[0..-5].decamelize.to_sym if name.match?(/File\Z/)
     end
 
-    def initialize(filename, device, _range_num, _clone_num, io)
+    def initialize(filename, device, _vlan_id, _range_num, _clone_num, io)
       @filename = filename
       @device = device
       @vars = value_set_class.new(io)
@@ -74,7 +74,7 @@ module Iface
   #
   # These are files named like "ifcfg-eth0".
   class PrimaryFile < ConfigFile
-    def self.recognize?(device, range_num, clone_num)
+    def self.recognize?(device, _vlan_id, range_num, clone_num)
       device != 'lo' && range_num.nil? && clone_num.nil?
     end
 
@@ -143,11 +143,11 @@ module Iface
   class CloneFile < ConfigFile
     attr_reader :ip_address, :clone_num
 
-    def self.recognize?(_device, _range_num, clone_num)
+    def self.recognize?(_device, _vlan_id, _range_num, clone_num)
       !clone_num.nil?
     end
 
-    def initialize(filename, device, _range_num, clone_num, io)
+    def initialize(filename, device, _vlan_id, _range_num, clone_num, io)
       super
       @ip_address = vars['ipaddr']
       @clone_num = clone_num
@@ -168,11 +168,11 @@ module Iface
   class RangeFile < ConfigFile
     attr_reader :start_clone_num
 
-    def self.recognize?(_device, range_num, _clone_num)
+    def self.recognize?(_device, _vlan_id, range_num, _clone_num)
       !range_num.nil?
     end
 
-    def initialize(filename, device, range_num, clone_num, io)
+    def initialize(filename, device, _vlan_id, range_num, clone_num, io)
       super
       @start_ip_num = string_to_ip_num(vars['ipaddr_start'])
       @end_ip_num = string_to_ip_num(vars['ipaddr_end'])
@@ -201,13 +201,33 @@ module Iface
     end
   end
 
+  # Represents a VLAN file
+  #
+  # These are files named like "ifcfg-eth0.123" where 123 is the VLAN ID.
+  class VlanFile < ConfigFile
+    attr_accessor :vlan_id
+
+    def self.recognize?(device, vlan_id, _range_num, _clone_num)
+      !vlan_id.nil?
+    end
+
+    def initialize(filename, device, vlan_id, _range_num, _clone_num, io)
+      super
+      @vlan_id = vlan_id
+    end
+
+    def static?
+      @vars['bootproto'] == 'none'
+    end
+  end
+
   # Represents a loopback file (device "lo")
   class LoopbackFile < ConfigFile
-    def self.recognize?(device, _range_num, _clone_num)
+    def self.recognize?(device, _vlan_id, _range_num, _clone_num)
       device == 'lo'
     end
 
-    def initialize(filename, device, range_num, _clone_num, io)
+    def initialize(filename, device, _vlan_id, range_num, _clone_num, io)
       super
       @ip_address = vars['ipaddr']
     end
@@ -222,6 +242,7 @@ module Iface
   end
 
   FILE_TYPES = [
+    VlanFile,
     PrimaryFile,
     CloneFile,
     RangeFile,

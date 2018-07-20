@@ -63,24 +63,31 @@ RSpec.describe Iface::ConfigFile do
   describe '::parse_filename' do
     context 'simple interface file name' do
       it 'returns the device name' do
-        expect(described_class.parse_filename('ifcfg-eth0')).to eq ['eth0', nil, nil]
-        expect(described_class.parse_filename('ifcfg-lo')).to eq ['lo', nil, nil]
-        expect(described_class.parse_filename('ifcfg-venet0')).to eq ['venet0', nil, nil]
+        expect(described_class.parse_filename('ifcfg-eth0')).to eq ['eth0', nil, nil, nil]
+        expect(described_class.parse_filename('ifcfg-lo')).to eq ['lo', nil, nil, nil]
+        expect(described_class.parse_filename('ifcfg-venet0')).to eq ['venet0', nil, nil, nil]
+      end
+    end
+
+    context 'VLAN file name' do
+      it 'returns the device name and VLAN ID' do
+        expect(described_class.parse_filename('ifcfg-eth0.123')).to eq ['eth0', 123, nil, nil]
+        expect(described_class.parse_filename('ifcfg-eth1.10')).to eq ['eth1', 10, nil, nil]
       end
     end
 
     context 'range file name' do
       it 'returns the device name and range number' do
-        expect(described_class.parse_filename('ifcfg-eth0-range0')).to eq ['eth0', 0, nil]
-        expect(described_class.parse_filename('ifcfg-eth1-range10')).to eq ['eth1', 10, nil]
+        expect(described_class.parse_filename('ifcfg-eth0-range0')).to eq ['eth0', nil, 0, nil]
+        expect(described_class.parse_filename('ifcfg-eth1-range10')).to eq ['eth1', nil, 10, nil]
       end
     end
 
     context 'clone file name' do
       it 'returns the device name and clone number' do
-        expect(described_class.parse_filename('ifcfg-eth0:0')).to eq ['eth0', nil, 0]
-        expect(described_class.parse_filename('ifcfg-eth1:12')).to eq ['eth1', nil, 12]
-        expect(described_class.parse_filename('ifcfg-venet0:999')).to eq ['venet0', nil, 999]
+        expect(described_class.parse_filename('ifcfg-eth0:0')).to eq ['eth0', nil, nil, 0]
+        expect(described_class.parse_filename('ifcfg-eth1:12')).to eq ['eth1', nil, nil, 12]
+        expect(described_class.parse_filename('ifcfg-venet0:999')).to eq ['venet0', nil, nil, 999]
       end
     end
   end
@@ -295,6 +302,38 @@ RSpec.describe Iface::RangeFile do
       it 'returns false' do
         expect(config_file.include?('10.0.0.0')).to eq false
       end
+    end
+  end
+end
+
+RSpec.describe Iface::VlanFile do
+  let(:ipaddr) { '10.11.12.13' }
+  let(:vlan_id) { 123 }
+
+  let(:vlan_file) do
+    [
+      "ifcfg-eth0.#{vlan_id}",
+      StringIO.new(<<~__EOF__)
+        DEVICE=eth0.#{vlan_id}
+        ONBOOT=yes
+        BOOTPROTO=none
+        IPADDR=#{ipaddr}
+        VLAN=yes
+      __EOF__
+    ]
+  end
+
+  let(:config_file) { described_class.create(*vlan_file) }
+
+  context '#vlan_id' do
+    it 'returns the correct VLAN ID' do
+      expect(config_file.vlan_id).to eq vlan_id
+    end
+  end
+
+  context '#static?' do
+    it 'returns true' do
+      expect(config_file.static?).to eq true
     end
   end
 end
