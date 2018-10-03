@@ -7,6 +7,7 @@ RSpec.describe Iface::Config do
   let(:ipaddr_end) { '173.208.232.30' }
   let(:clone_num) { 123 }
   let(:range_num) { 456 }
+  let(:vlan_id) { 789 }
   let(:clonenum_start) { 24 }
 
   let(:primary_file) do
@@ -26,6 +27,19 @@ RSpec.describe Iface::Config do
         USERCTL=no
         PEERDNS=yes
         IPV6INIT=no
+      __EOF__
+    ]
+  end
+
+  let(:vlan_file) do
+    [
+      "ifcfg-eth0.#{vlan_id}",
+      StringIO.new(<<~__EOF__)
+        DEVICE=eth0.#{vlan_id}
+        ONBOOT=yes
+        BOOTPROTO=none
+        IPADDR=#{ipaddr}
+        VLAN=yes
       __EOF__
     ]
   end
@@ -62,6 +76,7 @@ RSpec.describe Iface::Config do
       c.add(*primary_file)
       c.add(*clone_file)
       c.add(*range_file)
+      c.add(*vlan_file)
     end
   end
 
